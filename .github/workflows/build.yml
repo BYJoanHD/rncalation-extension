@@ -53,16 +53,16 @@ jobs:
             -keypass password123 \
             -dname "CN=Tachiyomi, OU=Extension, O=Tachiyomi, L=Unknown, ST=Unknown, C=US"
 
-- name: Build APK
-  working-directory: build-env
-  env:
-    KEY_STORE_PASSWORD: password123
-    ALIAS: tachiyomi
-    KEY_PASSWORD: password123
-  run: |
-    chmod +x gradlew
-    ./gradlew spotlessApply
-    ./gradlew ":src:es:rncalation:assembleRelease"
+      - name: Build APK
+        working-directory: build-env
+        env:
+          KEY_STORE_PASSWORD: password123
+          ALIAS: tachiyomi
+          KEY_PASSWORD: password123
+        run: |
+          chmod +x gradlew
+          ./gradlew spotlessApply
+          ./gradlew ":src:es:rncalation:assembleRelease"
 
       - name: Prepare repo
         run: |
