@@ -1,6 +1,14 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
+android {
+    compileSdk AndroidConfig.compileSdk
+    defaultConfig {
+        minSdk AndroidConfig.minSdk
+        targetSdk AndroidConfig.targetSdk
+    }
+}
+
 ext {
     extName = 'RNCALATION'
     pkgNameSuffix = 'es.rncalation'
