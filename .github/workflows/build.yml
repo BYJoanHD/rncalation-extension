@@ -28,8 +28,22 @@ jobs:
           echo 'include(":src-es-rncalation")' >> build-env/settings.gradle.kts
           echo 'project(":src-es-rncalation").projectDir = file("src/es/rncalation")' >> build-env/settings.gradle.kts
 
+      - name: Generate signing key
+        run: |
+          keytool -genkey -v \
+            -keystore build-env/signingkey.jks \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -alias tachiyomi \
+            -storepass password123 \
+            -keypass password123 \
+            -dname "CN=Tachiyomi, OU=Extension, O=Tachiyomi, L=Unknown, ST=Unknown, C=US"
+
       - name: Build APK
         working-directory: build-env
+        env:
+          KEY_STORE_PASSWORD: password123
+          ALIAS: tachiyomi
+          KEY_PASSWORD: password123
         run: |
           chmod +x gradlew
           ./gradlew :src-es-rncalation:assembleRelease
