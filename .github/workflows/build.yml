@@ -18,86 +18,19 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-name: Build & Publish
-
-on:
-  push:
-    branches: [ main ]
-  workflow_dispatch:
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
       - name: Clone extensions-source
         run: |
           git clone --depth=1 https://github.com/keiyoushi/extensions-source.git build-env
           mkdir -p build-env/src/es/rncalation/src/eu/kanade/tachiyomi/extension/es/rncalation
           cp src/eu/kanade/tachiyomi/extension/es/rncalation/Rncalation.kt build-env/src/es/rncalation/src/eu/kanade/tachiyomi/extension/es/rncalation/Rncalation.kt
-          cat > build-env/src/es/rncalation/build.gradle << 'EOF'
-          ext {
-              extName = 'RNCALATION'
-              extClass = '.Rncalation'
-              extVersionCode = 1
-              isNsfw = false
-          }
-          apply from: "$rootDir/common.gradle"
-          EOF
+          printf 'ext {\n    extName = "RNCALATION"\n    extClass = ".Rncalation"\n    extVersionCode = 1\n    isNsfw = false\n}\napply from: "$rootDir/common.gradle"\n' > build-env/src/es/rncalation/build.gradle
           echo "" >> build-env/settings.gradle.kts
           echo 'include(":src-es-rncalation")' >> build-env/settings.gradle.kts
           echo 'project(":src-es-rncalation").projectDir = file("src/es/rncalation")' >> build-env/settings.gradle.kts
 
       - name: Generate signing key
         run: |
-          keytool -genkey -v \
-            -keystore build-env/signingkey.jks \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -alias tachiyomi \
-            -storepass password123 \
-            -keypass password123 \
-            -dname "CN=Tachiyomi, OU=Extension, O=Tachiyomi, L=Unknown, ST=Unknown, C=US"
-
-      - name: Build APK
-        working-directory: build-env
-        env:
-          KEY_STORE_PASSWORD: password123
-          ALIAS: tachiyomi
-          KEY_PASSWORD: password123
-        run: |
-          chmod +x gradlew
-          ./gradlew :src-es-rncalation:assembleRelease
-
-      - name: Prepare repo
-        run: |
-          mkdir -p repo/apk
-          find build-env -name "*.apk" -exec cp {} repo/apk/tachiyomi-es.rncalation.apk \;
-          echo '[{"name":"RNCALATION","pkg":"eu.kanade.tachiyomi.extension.es.rncalation","apk":"tachiyomi-es.rncalation.apk","lang":"es","code":1,"version":"1.0.0","nsfw":0,"sources":[{"id":"8174527671646","lang":"es","name":"RNCALATION","baseUrl":"https://rncalation.online","versionId":1}]}]' > repo/index.min.json
-
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./repo
-          publish_branch: repo
-
-      - name: Generate signing key
-        run: |
-          keytool -genkey -v \
-            -keystore build-env/signingkey.jks \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -alias tachiyomi \
-            -storepass password123 \
-            -keypass password123 \
-            -dname "CN=Tachiyomi, OU=Extension, O=Tachiyomi, L=Unknown, ST=Unknown, C=US"
+          keytool -genkey -v -keystore build-env/signingkey.jks -keyalg RSA -keysize 2048 -validity 10000 -alias tachiyomi -storepass password123 -keypass password123 -dname "CN=Tachiyomi, OU=Extension, O=Tachiyomi, L=Unknown, ST=Unknown, C=US"
 
       - name: Build APK
         working-directory: build-env
