@@ -100,7 +100,7 @@ class Rncalation : ParsedHttpSource() {
     // =============================== Chapters ==============================
 
     override fun chapterListRequest(manga: SManga): Request =
-        GET(baseUrl + manga.url, headers)
+        GET(baseUrl + manga.url)
 
     override fun chapterListSelector() = "a[href*='/cap/']"
 
@@ -114,7 +114,7 @@ class Rncalation : ParsedHttpSource() {
     // =============================== Pages =================================
 
     override fun pageListRequest(chapter: SChapter): Request =
-        GET(baseUrl + chapter.url, headers)
+        GET(baseUrl + chapter.url)
 
     override fun pageListParse(document: Document): List<Page> {
         return document.select("img[src*='/uploads/pages/']")
