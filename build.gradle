@@ -1,20 +1,54 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
-android {
-    compileSdk AndroidConfig.compileSdk
-    defaultConfig {
-        minSdk AndroidConfig.minSdk
-        targetSdk AndroidConfig.targetSdk
-    }
-}
-
 ext {
     extName = 'RNCALATION'
-    pkgNameSuffix = 'es.rncalation'
     extClass = '.Rncalation'
     extVersionCode = 1
     isNsfw = false
 }
 
-apply from: "$rootDir/common.gradle"
+android {
+    compileSdk 35
+    namespace "eu.kanade.tachiyomi.extension.es.rncalation"
+
+    sourceSets {
+        main {
+            manifest.srcFile "AndroidManifest.xml"
+            java.srcDirs = ['src']
+        }
+    }
+
+    defaultConfig {
+        minSdk 29
+        targetSdk 35
+        applicationId "eu.kanade.tachiyomi.extension.es.rncalation"
+        versionCode extVersionCode
+        versionName "1.4.$extVersionCode"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = "1.8"
+    }
+}
+
+repositories {
+    mavenCentral()
+    google()
+}
+
+dependencies {
+    compileOnly 'eu.kanade.tachiyomi:extensions-lib:1.5@aar'
+    implementation 'com.squareup.okhttp3:okhttp:4.12.0'
+    implementation 'org.jsoup:jsoup:1.17.2'
