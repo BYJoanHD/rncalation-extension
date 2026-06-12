@@ -40,8 +40,8 @@ jobs:
           EOF
 
           echo "" >> build-env/settings.gradle.kts
-          echo 'include(":src-es-rncalation")' >> build-env/settings.gradle.kts
-          echo 'project(":src-es-rncalation").projectDir = file("src/es/rncalation")' >> build-env/settings.gradle.kts
+          echo 'include(":src:es:rncalation")' >> build-env/settings.gradle.kts
+          echo 'project(":src:es:rncalation").projectDir = file("src/es/rncalation")' >> build-env/settings.gradle.kts
 
           keytool -genkey -v \
             -keystore build-env/signingkey.jks \
@@ -61,7 +61,7 @@ jobs:
           KEY_PASSWORD: password123
         run: |
           chmod +x gradlew
-          ./gradlew spotlessApply :src-es-rncalation:assembleRelease
+         ./gradlew spotlessApply :src:es:rncalation:assembleRelease
 
       - name: Prepare repo
         run: |
