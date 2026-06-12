@@ -21,18 +21,16 @@ jobs:
       - name: Clone extensions-source
         run: |
           git clone --depth=1 https://github.com/keiyoushi/extensions-source.git build-env
-
-      - name: Copy extension
-        run: |
-          mkdir -p build-env/src/es/Rncalation
-          cp build.gradle build-env/src/es/Rncalation/
-          cp -r src/ build-env/src/es/Rncalation/src/
+          mkdir -p build-env/src/es/rncalation
+          cp build.gradle build-env/src/es/rncalation/build.gradle
+          mkdir -p build-env/src/es/rncalation/src/eu/kanade/tachiyomi/extension/es/rncalation
+          cp src/eu/kanade/tachiyomi/extension/es/rncalation/Rncalation.kt build-env/src/es/rncalation/src/eu/kanade/tachiyomi/extension/es/rncalation/Rncalation.kt
 
       - name: Build APK
         working-directory: build-env
         run: |
           chmod +x gradlew
-          ./gradlew :src-es-Rncalation:assembleRelease
+          ./gradlew :src-es-rncalation:assembleRelease
 
       - name: Prepare repo
         run: |
