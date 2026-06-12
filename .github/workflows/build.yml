@@ -21,7 +21,7 @@ jobs:
 
       - name: Setup
         run: |
-          git clone --depth=1 https://github.com/keiyoushi/extensions-source.git build-env
+          git clone find build-env -type f | sort --depth=1 https://github.com/keiyoushi/extensions-source.git build-env
 
           mkdir -p build-env/src/es/rncalation/src/eu/kanade/tachiyomi/extension/es/rncalation
 
