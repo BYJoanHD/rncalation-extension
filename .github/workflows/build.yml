@@ -24,7 +24,10 @@ jobs:
           mkdir -p build-env/src/es/rncalation/src/eu/kanade/tachiyomi/extension/es/rncalation
           cp src/eu/kanade/tachiyomi/extension/es/rncalation/Rncalation.kt build-env/src/es/rncalation/src/eu/kanade/tachiyomi/extension/es/rncalation/Rncalation.kt
           COMMON=$(pwd)/build-env/common.gradle
-          printf 'ext {\n    extName = "RNCALATION"\n    extClass = ".Rncalation"\n    extVersionCode = 1\n    isNsfw = false\n}\napply from: "%s"\n' "$COMMON" > build-env/src/es/rncalation/build.gradle
+          echo 'ext { extName = "RNCALATION"; extClass = ".Rncalation"; extVersionCode = 1; isNsfw = false }' > build-env/src/es/rncalation/build.gradle
+echo "apply from: \"${GITHUB_WORKSPACE}/build-env/common.gradle\"" >> build-env/src/es/rncalation/build.gradle
+cat build-env/src/es/rncalation/build.gradle
+
           echo "" >> build-env/settings.gradle.kts
           echo 'include(":src-es-rncalation")' >> build-env/settings.gradle.kts
           echo 'project(":src-es-rncalation").projectDir = file("src/es/rncalation")' >> build-env/settings.gradle.kts
