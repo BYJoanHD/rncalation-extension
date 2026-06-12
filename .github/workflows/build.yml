@@ -1,27 +1,66 @@
-name: Build & Publish
+steps:
+  - name: Checkout
+    uses: actions/checkout@v4
 
-on:
-  workflow_dispatch:
+  - name: Set up JDK 17
+    uses: actions/setup-java@v4
+    with:
+      java-version: '17'
+      distribution: 'temurin'
 
-jobs:
-  debug:
-    runs-on: ubuntu-latest
+  - name: Setup
+    run: |
+      git clone --depth=1 https://github.com/keiyoushi/extensions-source.git build-env
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      mkdir -p build-env/src/es/rncalation/src/eu/kanade/tachiyomi/extension/es/rncalation
 
-      - name: Clone extensions-source
-        run: |
-          git clone --depth=1 https://github.com/keiyoushi/extensions-source.git build-env
+      cp src/eu/kanade/tachiyomi/extension/es/rncalation/Rncalation.kt \
+      build-env/src/es/rncalation/src/eu/kanade/tachiyomi/extension/es/rncalation/Rncalation.kt
 
-      - name: Show sample build.gradle
-        run: |
-          echo "=== TOPTOON BUILD.GRADLE ==="
-          cat build-env/src/zh/toptoon/build.gradle
+      cat > build-env/src/es/rncalation/build.gradle << 'EOF'
+      ext {
+          extName = 'RNCALATION'
+          extClass = '.Rncalation'
+          extVersionCode = 1
+          isNsfw = false
+      }
 
-          echo ""
-          echo "=== SETTINGS ==="
-          cat build-env/settings.gradle.kts
+      apply plugin: "kei.plugins.extension.legacy"
+      EOF
 
-          exit 1
+      echo "" >> build-env/settings.gradle.kts
+      echo 'include(":src-es-rncalation")' >> build-env/settings.gradle.kts
+      echo 'project(":src-es-rncalation").projectDir = file("src/es/rncalation")' >> build-env/settings.gradle.kts
+
+      keytool -genkey -v \
+        -keystore build-env/signingkey.jks \
+        -keyalg RSA \
+        -keysize 2048 \
+        -validity 10000 \
+        -alias tachiyomi \
+        -storepass password123 \
+        -keypass password123 \
+        -dname "CN=Tachiyomi, OU=Extension, O=Tachiyomi, L=Unknown, ST=Unknown, C=US"
+
+  - name: Build APK
+    working-directory: build-env
+    env:
+      KEY_STORE_PASSWORD: password123
+      ALIAS: tachiyomi
+      KEY_PASSWORD: password123
+    run: |
+      chmod +x gradlew
+      ./gradlew :src-es-rncalation:assembleRelease
+
+  - name: Prepare repo
+    run: |
+      mkdir -p repo/apk
+      find build-env -name "*.apk" -exec cp {} repo/apk/tachiyomi-es.rncalation.apk \;
+      echo '[{"name":"RNCALATION","pkg":"eu.kanade.tachiyomi.extension.es.rncalation","apk":"tachiyomi-es.rncalation.apk","lang":"es","code":1,"version":"1.0.0","nsfw":0,"sources":[{"id":"8174527671646","lang":"es","name":"RNCALATION","baseUrl":"https://rncalation.online","versionId":1}]}]' > repo/index.min.json
+
+  - name: Deploy to GitHub Pages
+    uses: peaceiris/actions-gh-pages@v4
+    with:
+      github_token: ${{ secrets.GITHUB_TOKEN }}
+      publish_dir: ./repo
+      publish_branch: repo
