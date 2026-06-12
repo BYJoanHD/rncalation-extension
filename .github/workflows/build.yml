@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,18 +22,34 @@ jobs:
       - name: Setup
         run: |
           git clone --depth=1 https://github.com/keiyoushi/extensions-source.git build-env
+
           mkdir -p build-env/src/es/rncalation/src/eu/kanade/tachiyomi/extension/es/rncalation
-          cp src/eu/kanade/tachiyomi/extension/es/rncalation/Rncalation.kt build-env/src/es/rncalation/src/eu/kanade/tachiyomi/extension/es/rncalation/Rncalation.kt
+
+          cp src/eu/kanade/tachiyomi/extension/es/rncalation/Rncalation.kt \
+          build-env/src/es/rncalation/src/eu/kanade/tachiyomi/extension/es/rncalation/Rncalation.kt
+
+          COMMON=$(find build-env -name common.gradle | head -n 1)
+
+          echo "common.gradle encontrado en: $COMMON"
 
           echo 'ext { extName = "RNCALATION"; extClass = ".Rncalation"; extVersionCode = 1; isNsfw = false }' > build-env/src/es/rncalation/build.gradle
-          echo "apply from: \"${GITHUB_WORKSPACE}/build-env/common.gradle\"" >> build-env/src/es/rncalation/build.gradle
+          echo "apply from: \"$COMMON\"" >> build-env/src/es/rncalation/build.gradle
+
           cat build-env/src/es/rncalation/build.gradle
 
           echo "" >> build-env/settings.gradle.kts
           echo 'include(":src-es-rncalation")' >> build-env/settings.gradle.kts
           echo 'project(":src-es-rncalation").projectDir = file("src/es/rncalation")' >> build-env/settings.gradle.kts
 
-          keytool -genkey -v -keystore build-env/signingkey.jks -keyalg RSA -keysize 2048 -validity 10000 -alias tachiyomi -storepass password123 -keypass password123 -dname "CN=Tachiyomi, OU=Extension, O=Tachiyomi, L=Unknown, ST=Unknown, C=US"
+          keytool -genkey -v \
+            -keystore build-env/signingkey.jks \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -alias tachiyomi \
+            -storepass password123 \
+            -keypass password123 \
+            -dname "CN=Tachiyomi, OU=Extension, O=Tachiyomi, L=Unknown, ST=Unknown, C=US"
 
       - name: Build APK
         working-directory: build-env
