@@ -1,36 +1,27 @@
 name: Build & Publish
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
-  build:
+  debug:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Setup
+      - name: Clone extensions-source
         run: |
           git clone --depth=1 https://github.com/keiyoushi/extensions-source.git build-env
 
-          echo "=== ARCHIVOS GRADLE ==="
-          find build-env -name "*.gradle*" | sort
+      - name: Show sample build.gradle
+        run: |
+          echo "=== TOPTOON BUILD.GRADLE ==="
+          cat build-env/src/zh/toptoon/build.gradle
 
-          echo "=== COMMON ==="
-          find build-env -name "common.gradle" | sort
-
+          echo ""
           echo "=== SETTINGS ==="
-          find build-env -name "settings.gradle*" | sort
+          cat build-env/settings.gradle.kts
 
-      - name: Stop after debug
-        run: exit 1
+          exit 1
