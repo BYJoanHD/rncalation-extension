@@ -1,0 +1,47 @@
+name: Build & Publish
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Clone extensions-source
+        run: |
+          git clone --depth=1 https://github.com/keiyoushi/extensions-source.git build-env
+          mkdir -p build-env/src/es/Rncalation
+          cp -r src/ build-env/src/es/Rncalation/
+          cp build.gradle build-env/src/es/Rncalation/
+
+      - name: Build APK
+        working-directory: build-env
+        run: |
+          chmod +x gradlew
+          ./gradlew :src-es-Rncalation:assembleRelease
+
+      - name: Prepare repo
+        run: |
+          mkdir -p repo/apk
+          find build-env -name "*.apk" -exec cp {} repo/apk/tachiyomi-es.rncalation.apk \;
+          cat > repo/index.min.json << 'EOF'
+          [{"name":"RNCALATION","pkg":"eu.kanade.tachiyomi.extension.es.rncalation","apk":"tachiyomi-es.rncalation.apk","lang":"es","code":1,"version":"1.0.0","nsfw":0,"sources":[{"id":"8174527671646","lang":"es","name":"RNCALATION","baseUrl":"https://rncalation.online","versionId":1}]}]
+          EOF
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./repo
+          publish_branch: repo
