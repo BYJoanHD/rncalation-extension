@@ -3,14 +3,12 @@ package eu.kanade.tachiyomi.extension.es.rncalation
 import eu.kanade.tachiyomi.network.GET
 import eu.kanade.tachiyomi.source.model.Filter
 import eu.kanade.tachiyomi.source.model.FilterList
-import eu.kanade.tachiyomi.source.model.MangasPage
 import eu.kanade.tachiyomi.source.model.Page
 import eu.kanade.tachiyomi.source.model.SChapter
 import eu.kanade.tachiyomi.source.model.SManga
 import eu.kanade.tachiyomi.source.online.ParsedHttpSource
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.Request
-import okhttp3.Response
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
 
@@ -21,158 +19,106 @@ class Rncalation : ParsedHttpSource() {
     override val lang = "es"
     override val supportsLatest = true
 
-    // =============================== Popular ================================
+    // ================= POPULAR =================
 
     override fun popularMangaRequest(page: Int): Request =
-        GET("$baseUrl/library?q=&type=&status=&genre=&sort=views&page=$page", headers)
+        GET("$baseUrl/library?sort=views&page=$page")
 
-    override fun popularMangaSelector() = "a[href*='/comics/']:not([href*='/cap/'])"
+    override fun popularMangaSelector() =
+        "a[href*='/comics/']:not([href*='/cap/'])"
 
-    override fun popularMangaFromElement(element: Element): SManga = SManga.create().apply {
-        setUrlWithoutDomain(element.attr("href"))
-        title = element.selectFirst("h3, .comic-title")?.text()
-            ?: element.text().lines().firstOrNull { it.isNotBlank() } ?: ""
-        thumbnail_url = element.selectFirst("img")?.let {
-            it.attr("abs:src").ifEmpty { it.attr("abs:data-src") }
+    override fun popularMangaFromElement(element: Element): SManga =
+        SManga.create().apply {
+            setUrlWithoutDomain(element.attr("href"))
+            title = element.selectFirst("h3")?.text() ?: element.text()
+            thumbnail_url = element.selectFirst("img")?.attr("abs:src")
         }
-    }
 
-    override fun popularMangaNextPageSelector() = "a[href*='page=']:contains(→)"
+    override fun popularMangaNextPageSelector() = "a:contains(→)"
 
-    // =============================== Latest =================================
+    // ================= LATEST =================
 
     override fun latestUpdatesRequest(page: Int): Request =
-        GET("$baseUrl/library?q=&type=&status=&genre=&sort=latest&page=$page", headers)
+        GET("$baseUrl/library?sort=latest&page=$page")
 
     override fun latestUpdatesSelector() = popularMangaSelector()
 
-    override fun latestUpdatesFromElement(element: Element) = popularMangaFromElement(element)
+    override fun latestUpdatesFromElement(element: Element) =
+        popularMangaFromElement(element)
 
-    override fun latestUpdatesNextPageSelector() = popularMangaNextPageSelector()
+    override fun latestUpdatesNextPageSelector() =
+        popularMangaNextPageSelector()
 
-    // =============================== Search =================================
+    // ================= SEARCH =================
 
     override fun searchMangaRequest(page: Int, query: String, filters: FilterList): Request {
         val url = "$baseUrl/library".toHttpUrl().newBuilder().apply {
             addQueryParameter("q", query)
             addQueryParameter("page", page.toString())
-            filters.forEach { filter ->
-                when (filter) {
-                    is TypeFilter -> addQueryParameter("type", filter.selected())
-                    is StatusFilter -> addQueryParameter("status", filter.selected())
-                    is SortFilter -> addQueryParameter("sort", filter.selected())
-                    is GenreFilter -> if (filter.state.isNotBlank()) addQueryParameter("genre", filter.state)
-                    else -> {}
+
+            filters.forEach {
+                when (it) {
+                    is TypeFilter -> addQueryParameter("type", it.selected())
+                    is StatusFilter -> addQueryParameter("status", it.selected())
+                    is SortFilter -> addQueryParameter("sort", it.selected())
                 }
             }
         }.build()
-        return GET(url, headers)
+
+        return GET(url)
     }
 
     override fun searchMangaSelector() = popularMangaSelector()
+    override fun searchMangaFromElement(element: Element) =
+        popularMangaFromElement(element)
 
-    override fun searchMangaFromElement(element: Element) = popularMangaFromElement(element)
+    override fun searchMangaNextPageSelector() =
+        popularMangaNextPageSelector()
 
-    override fun searchMangaNextPageSelector() = popularMangaNextPageSelector()
+    // ================= DETAILS =================
 
-    // ============================= Manga Details ============================
-
-    override fun mangaDetailsParse(document: Document): SManga = SManga.create().apply {
-        title = document.selectFirst("h1")?.text() ?: ""
-        thumbnail_url = document.selectFirst("img[src*='/covers/']")?.attr("abs:src")
-        description = document.selectFirst("p:not(:has(a)):not(:empty)")?.text()
-        val statusText = document.selectFirst("[class*='status'], .badge")?.text()?.lowercase() ?: ""
-        status = when {
-            "curso" in statusText || "ongoing" in statusText -> SManga.ONGOING
-            "completado" in statusText || "completed" in statusText -> SManga.COMPLETED
-            "pausa" in statusText -> SManga.ON_HIATUS
-            "cancelado" in statusText -> SManga.CANCELLED
-            else -> SManga.UNKNOWN
+    override fun mangaDetailsParse(document: Document): SManga =
+        SManga.create().apply {
+            title = document.selectFirst("h1")?.text() ?: ""
+            thumbnail_url = document.selectFirst("img")?.attr("abs:src")
+            description = document.selectFirst("p")?.text()
         }
-        genre = document.select("[class*='badge'], [class*='tag']")
-            .map { it.text().trim() }
-            .filter { it.isNotBlank() && it.length < 30 }
-            .distinct()
-            .joinToString(", ")
-            .ifEmpty { null }
-    }
 
-    // =============================== Chapters ==============================
+    // ================= CHAPTERS =================
 
-    override fun chapterListRequest(manga: SManga): Request =
-        GET(baseUrl + manga.url)
+    override fun chapterListSelector() =
+        "a[href*='/cap/']"
 
-    override fun chapterListSelector() = "a[href*='/cap/']"
+    override fun chapterFromElement(element: Element): SChapter =
+        SChapter.create().apply {
+            setUrlWithoutDomain(element.attr("href"))
+            name = element.text().trim()
+        }
 
-    override fun chapterFromElement(element: Element): SChapter = SChapter.create().apply {
-        setUrlWithoutDomain(element.attr("href"))
-        name = element.text().trim()
-            .replace(Regex("GRATIS|NUEVO|PREMIUM", RegexOption.IGNORE_CASE), "")
-            .trim()
-    }
+    // ================= PAGES =================
 
-    // =============================== Pages =================================
-
-    override fun pageListRequest(chapter: SChapter): Request =
-        GET(baseUrl + chapter.url)
-
-    override fun pageListParse(document: Document): List<Page> {
-        return document.select("img[src*='/uploads/pages/']")
-            .mapIndexed { index, img ->
-                Page(index, "", img.attr("abs:src"))
+    override fun pageListParse(document: Document): List<Page> =
+        document.select("img[src*='/uploads/pages/']")
+            .mapIndexed { i, img ->
+                Page(i, "", img.attr("abs:src"))
             }
-            .filter { it.imageUrl!!.isNotBlank() }
-    }
 
     override fun imageUrlParse(document: Document) = ""
 
-    // =============================== Filters ==============================
+    // ================= FILTERS =================
 
     override fun getFilterList() = FilterList(
         TypeFilter(),
         StatusFilter(),
         SortFilter(),
-        GenreFilter(),
     )
 
-    class TypeFilter : SelectFilter(
-        "Tipo",
-        arrayOf(
-            Pair("Todos", ""),
-            Pair("Manga", "Manga"),
-            Pair("Manhwa", "Manhwa"),
-            Pair("Manhua", "Manhua"),
-            Pair("Novel", "Novel"),
-        ),
-    )
+    class TypeFilter : SelectFilter("Tipo", arrayOf("Todos", "Manga", "Manhwa", "Manhua"))
+    class StatusFilter : SelectFilter("Estado", arrayOf("Todos", "En curso", "Completado", "En pausa"))
+    class SortFilter : SelectFilter("Ordenar", arrayOf("latest", "views", "rating"))
 
-    class StatusFilter : SelectFilter(
-        "Estado",
-        arrayOf(
-            Pair("Todos", ""),
-            Pair("En curso", "En curso"),
-            Pair("Completado", "Completado"),
-            Pair("En pausa", "En pausa"),
-            Pair("Cancelado", "Cancelado"),
-        ),
-    )
-
-    class SortFilter : SelectFilter(
-        "Ordenar",
-        arrayOf(
-            Pair("Más reciente", "latest"),
-            Pair("Más visto", "views"),
-            Pair("Mejor valorado", "rating"),
-            Pair("A-Z", "az"),
-        ),
-    )
-
-    class GenreFilter : Filter.Text("Género (ej: Fantasía)")
-
-    open class SelectFilter(
-        name: String,
-        private val options: Array<Pair<String, String>>,
-    ) : Filter.Select<String>(name, options.map { it.first }.toTypedArray()) {
-        fun selected() = options[state].second
+    open class SelectFilter(name: String, private val values: Array<String>) :
+        Filter.Select<String>(name, values) {
+        fun selected() = values[state]
     }
 }
