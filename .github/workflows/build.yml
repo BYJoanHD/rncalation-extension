@@ -61,7 +61,7 @@ jobs:
           KEY_PASSWORD: password123
         run: |
           chmod +x gradlew
-          ./gradlew :src-es-rncalation:assembleRelease
+          ./gradlew spotlessApply :src-es-rncalation:assembleRelease
 
       - name: Prepare repo
         run: |
